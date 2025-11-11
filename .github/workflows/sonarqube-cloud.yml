@@ -46,6 +46,16 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Automático, no necesitas configurarlo
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # Debes configurar este secret
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # Debes configurar este secret en GitHub Settings → Secrets
         continue-on-error: true  # No bloquea el push si falla (útil hasta configurar SONAR_TOKEN)
+        
+      - name: Verificar resultado del análisis
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Análisis de SonarCloud completado exitosamente"
+          else
+            echo "⚠️  El análisis falló. Verifica que SONAR_TOKEN esté configurado correctamente."
+            echo "   Lee CONFIGURAR_SONARQUBE.md para más información."
+          fi
 
