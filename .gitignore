@@ -72,3 +72,8 @@ node_modules/
 .sonar/
 .scannerwork/
 sonar-project.properties.bak
+
+# Node.js binarios (no subir binarios de Node al repositorio)
+node-v20.17.0-win-x64/
+node.zip
+python
