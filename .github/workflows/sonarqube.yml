@@ -1,0 +1,62 @@
+name: SonarQube Analysis
+
+on:
+  # Solo ejecutar en pull requests, no en push directo (evita bloquear pushes)
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+  workflow_dispatch: # Permite ejecutar manualmente desde GitHub Actions
+  # Descomenta las siguientes líneas si quieres ejecutar también en push (después de configurar secrets)
+  # push:
+  #   branches:
+  #     - main
+  #     - master
+  #     - develop
+
+jobs:
+  sonarqube:
+    name: SonarQube Scan
+    runs-on: ubuntu-latest
+    # Permite que el job falle sin bloquear el push
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Clona todo el historial para análisis completo
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Ejecutar tests unitarios (si existen)
+        run: npm test -- --coverage --coverageReporters=lcov --coverageReporters=text || true
+        continue-on-error: true
+
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        continue-on-error: true  # No bloquea el push si falla (útil hasta configurar secrets)
+        # Si usas SonarCloud (gratis), usa esta acción en su lugar:
+        # uses: SonarSource/sonarcloud-github-action@master
+
+      # Opcional: Esperar a que el análisis se complete y verificar calidad
+      - name: SonarQube Quality Gate Check
+        id: sonarqube-quality-gate-check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        # Espera unos segundos para que el análisis se complete
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        continue-on-error: true
+

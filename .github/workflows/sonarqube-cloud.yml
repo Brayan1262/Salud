@@ -1,0 +1,51 @@
+name: SonarCloud Analysis
+
+on:
+  # Solo ejecutar en pull requests, no en push directo (evita bloquear pushes)
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+    types: [opened, synchronize, reopened]
+  workflow_dispatch: # Permite ejecutar manualmente desde GitHub Actions
+  # Descomenta las siguientes líneas si quieres ejecutar también en push (después de configurar SONAR_TOKEN)
+  # push:
+  #   branches:
+  #     - main
+  #     - master
+  #     - develop
+
+jobs:
+  sonarcloud:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
+    # Permite que el job falle sin bloquear el push
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Clona todo el historial para análisis completo
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Ejecutar tests unitarios con cobertura
+        run: npm run test:coverage || true
+        continue-on-error: true
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Automático, no necesitas configurarlo
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # Debes configurar este secret
+        continue-on-error: true  # No bloquea el push si falla (útil hasta configurar SONAR_TOKEN)
+
